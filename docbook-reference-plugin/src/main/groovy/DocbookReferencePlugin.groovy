@@ -37,347 +37,344 @@ import com.icl.saxon.TransformerFactoryImpl
 
 class DocbookReferencePlugin implements Plugin<Project> {
 
-    def void apply(Project project) {
+	def void apply(Project project) {
 
-        project.plugins.apply('base') // for `clean` task
+		project.plugins.apply('base') // for `clean` task
 
-        def tasks = project.tasks
+		def tasks = project.tasks
 
-        def multi = tasks.add("referenceHtmlMulti", HtmlMultiDocbookReferenceTask)
-        def single = tasks.add("referenceHtmlSingle", HtmlSingleDocbookReferenceTask)
-        def pdf = tasks.add("referencePdf", PdfDocbookReferenceTask)
+		def multi = tasks.add("referenceHtmlMulti", HtmlMultiDocbookReferenceTask)
+		def single = tasks.add("referenceHtmlSingle", HtmlSingleDocbookReferenceTask)
+		def pdf = tasks.add("referencePdf", PdfDocbookReferenceTask)
 
-        def reference = tasks.add("reference") {
-            group = 'Documentation'
-            description = "Generates HTML and PDF reference documentation."
-            dependsOn([multi, single, pdf])
+		def reference = tasks.add("reference") {
+			group = 'Documentation'
+			description = "Generates HTML and PDF reference documentation."
+			dependsOn([multi, single, pdf])
 
-            ext.sourceDir = null // e.g. new File('src/reference')
-            ext.outputDir = new File(project.buildDir, "reference")
-            ext.pdfFilename = "${project.rootProject.name}-reference.pdf"
+			ext.sourceDir = null // e.g. new File('src/reference')
+			ext.outputDir = new File(project.buildDir, "reference")
+			ext.pdfFilename = "${project.rootProject.name}-reference.pdf"
 
-            outputs.dir outputDir
-        }
+			outputs.dir outputDir
+		}
 
-        project.gradle.taskGraph.whenReady {
-            if (multi.sourceDir == null) multi.sourceDir = reference.sourceDir
-            if (single.sourceDir == null) single.sourceDir = reference.sourceDir
-            if (pdf.sourceDir == null) pdf.sourceDir = reference.sourceDir
+		project.gradle.taskGraph.whenReady {
+			if (multi.sourceDir == null) multi.sourceDir = reference.sourceDir
+			if (single.sourceDir == null) single.sourceDir = reference.sourceDir
+			if (pdf.sourceDir == null) pdf.sourceDir = reference.sourceDir
 
-            if (multi.outputDir == null) multi.outputDir = reference.outputDir
-            if (single.outputDir == null) single.outputDir = reference.outputDir
-            if (pdf.outputDir == null) pdf.outputDir = reference.outputDir
-        }
-
-    }
-
+			if (multi.outputDir == null) multi.outputDir = reference.outputDir
+			if (single.outputDir == null) single.outputDir = reference.outputDir
+			if (pdf.outputDir == null) pdf.outputDir = reference.outputDir
+		}
+	}
 }
 
 abstract class AbstractDocbookReferenceTask extends DefaultTask {
-    @InputDirectory
-    File sourceDir // e.g. 'src/reference'
+	@InputDirectory
+	File sourceDir // e.g. 'src/reference'
 
-    @Input
-    String sourceFileName = 'index.xml';
+	@Input
+	String sourceFileName = 'index.xml';
 
-    String stylesheet;
+	String stylesheet;
 
-    String xdir;
+	String xdir;
 
-    @OutputDirectory
-    File outputDir = new File(project.getBuildDir(), "reference");
+	@OutputDirectory
+	File outputDir = new File(project.getBuildDir(), "reference");
 
-    @TaskAction
-    public final void transform() {
-        // the docbook tasks issue spurious content to the console. redirect to INFO level
-        // so it doesn't show up in the default log level of LIFECYCLE unless the user has
-        // run gradle with '-d' or '-i' switches -- in that case show them everything
-        switch (project.gradle.startParameter.logLevel) {
-            case LogLevel.DEBUG:
-            case LogLevel.INFO:
-                break;
-            default:
-                logging.captureStandardOutput(LogLevel.INFO)
-                logging.captureStandardError(LogLevel.INFO)
-        }
+	@TaskAction
+	public final void transform() {
+		// the docbook tasks issue spurious content to the console. redirect to INFO level
+		// so it doesn't show up in the default log level of LIFECYCLE unless the user has
+		// run gradle with '-d' or '-i' switches -- in that case show them everything
+		switch (project.gradle.startParameter.logLevel) {
+			case LogLevel.DEBUG:
+			case LogLevel.INFO:
+				break;
+			default:
+				logging.captureStandardOutput(LogLevel.INFO)
+				logging.captureStandardError(LogLevel.INFO)
+		}
 
-        sourceDir = filterDocbookSources(sourceDir) // TODO call only once
-        unpack()                                        // TODO call only once
+		// TODO call only once
+		sourceDir = filterDocbookSources(sourceDir)
+		unpack()
 
-        SAXParserFactory factory = new org.apache.xerces.jaxp.SAXParserFactoryImpl();
-        factory.setXIncludeAware(true);
-        outputDir.mkdirs();
+		SAXParserFactory factory = new org.apache.xerces.jaxp.SAXParserFactoryImpl();
+		factory.setXIncludeAware(true);
+		outputDir.mkdirs();
 
-        File srcFile = new File(sourceDir, sourceFileName);
-        String outputFilename = srcFile.getName().substring(0, srcFile.getName().length() - 4) + '.' + this.getExtension();
+		File srcFile = new File(sourceDir, sourceFileName);
+		String outputFilename = srcFile.getName().substring(0, srcFile.getName().length() - 4) + '.' + this.getExtension();
 
-        File oDir = new File(outputDir, xdir)
-        File outputFile = new File(oDir, outputFilename);
+		File oDir = new File(outputDir, xdir)
+		File outputFile = new File(oDir, outputFilename);
 
-        Result result = new StreamResult(outputFile.getAbsolutePath());
-        CatalogResolver resolver = new CatalogResolver(createCatalogManager());
-        InputSource inputSource = new InputSource(srcFile.getAbsolutePath());
+		Result result = new StreamResult(outputFile.getAbsolutePath());
+		CatalogResolver resolver = new CatalogResolver(createCatalogManager());
+		InputSource inputSource = new InputSource(srcFile.getAbsolutePath());
 
-        XMLReader reader = factory.newSAXParser().getXMLReader();
-        reader.setEntityResolver(resolver);
-        TransformerFactory transformerFactory = new TransformerFactoryImpl();
-        transformerFactory.setURIResolver(resolver);
+		XMLReader reader = factory.newSAXParser().getXMLReader();
+		reader.setEntityResolver(resolver);
+		TransformerFactory transformerFactory = new TransformerFactoryImpl();
+		transformerFactory.setURIResolver(resolver);
 
-        def File stylesheetFile = new File(new File(sourceDir, "xsl"), stylesheet);
-        if(!stylesheetFile.exists()) {
-            stylesheetFile = new File("${project.buildDir}/docbook-resources/xsl/${stylesheet}");
-        }
-        URL url = stylesheetFile.toURI().toURL();
-        Source source = new StreamSource(url.openStream(), url.toExternalForm());
-        Transformer transformer = transformerFactory.newTransformer(source);
+		def File stylesheetFile = new File(new File(sourceDir, "xsl"), stylesheet);
+		if(!stylesheetFile.exists()) {
+			stylesheetFile = new File("${project.buildDir}/docbook-resources/xsl/${stylesheet}");
+		}
+		URL url = stylesheetFile.toURI().toURL();
+		Source source = new StreamSource(url.openStream(), url.toExternalForm());
+		Transformer transformer = transformerFactory.newTransformer(source);
 
-        transformer.setParameter("highlight.source", "1");
-        transformer.setParameter("highlight.xslthl.config", new File("${project.buildDir}/docbook-resources/highlighting", "xslthl-config.xml").toURI().toURL());
+		transformer.setParameter("highlight.source", "1");
+		transformer.setParameter("highlight.xslthl.config", new File("${project.buildDir}/docbook-resources/highlighting", "xslthl-config.xml").toURI().toURL());
 
-        preTransform(transformer, srcFile, outputFile);
+		preTransform(transformer, srcFile, outputFile);
 
-        transformer.transform(new SAXSource(reader, inputSource), result);
+		transformer.transform(new SAXSource(reader, inputSource), result);
 
-        postTransform(outputFile);
-    }
+		postTransform(outputFile);
+	}
 
-    abstract protected String getExtension()
+	abstract protected String getExtension()
 
-    protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
-    }
+	protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
+	}
 
-    protected void postTransform(File outputFile) {
-        copyImagesAndCss(project, xdir)
-    }
+	protected void postTransform(File outputFile) {
+		copyImagesAndCss(project, xdir)
+	}
 
-    /**
-     * @param sourceDir directory of unfiltered sources
-     * @return directory of filtered sources
-     */
-    private File filterDocbookSources(File sourceDir) {
-        def workDir = new File("${project.buildDir}/reference-work");
-        workDir.mkdirs();
+	/**
+	 * @param sourceDir directory of unfiltered sources
+	 * @return directory of filtered sources
+	 */
+	private File filterDocbookSources(File sourceDir) {
+		def workDir = new File("${project.buildDir}/reference-work");
+		workDir.mkdirs();
 
-        // copy everything but index.xml
-        project.copy {
-            into(workDir)
-            from(sourceDir) { exclude '**/index.xml' }
-        }
+		// copy everything but index.xml
+		project.copy {
+				into(workDir)
+				from(sourceDir) { exclude '**/index.xml' }
+		}
 
-        // copy index.xml and expand ${...} variables along the way
-        // e.g.: ${version} needs to be replaced in the header
-        project.copy {
-            into(workDir)
-            from(sourceDir) { include '**/index.xml' }
-            expand(version: "${project.version}")
-        }
+		// copy index.xml and expand ${...} variables along the way
+		// e.g.: ${version} needs to be replaced in the header
+		project.copy {
+				into(workDir)
+				from(sourceDir) { include '**/index.xml' }
+				expand(version: "${project.version}")
+		}
 
-        // Copy and process any custom titlepages
-        def titlePageWorkDir = new File(new File(workDir, "xsl"), "titlepage");
-        titlePageWorkDir.mkdirs();
-        Transformer transformer = new TransformerFactoryImpl().newTransformer(
-            new StreamSource(this.class.classLoader.getResourceAsStream("docbook/template/titlepage.xsl")));
-        transformer.setParameter("ns", "http://www.w3.org/1999/xhtml");
-        new File(sourceDir, "titlepage").eachFileMatch( ~/.*\.xml/, { f ->
-            File output = new File(titlePageWorkDir, f.name.replace(".xml", ".xsl"))
-            transformer.transform(new StreamSource(f), new StreamResult(output));
-            // Ugly hack to work around Java XSLT bug
-            output.setText(output.text.replaceFirst("xsl:stylesheet", "xsl:stylesheet xmlns:exsl=\"http://exslt.org/common\" "));
-        })
+		// Copy and process any custom titlepages
+		def titlePageWorkDir = new File(new File(workDir, "xsl"), "titlepage");
+		titlePageWorkDir.mkdirs();
+		Transformer transformer = new TransformerFactoryImpl().newTransformer(
+				new StreamSource(this.class.classLoader.getResourceAsStream("docbook/template/titlepage.xsl")));
+		transformer.setParameter("ns", "http://www.w3.org/1999/xhtml");
+		new File(sourceDir, "titlepage").eachFileMatch( ~/.*\.xml/, { f ->
+				File output = new File(titlePageWorkDir, f.name.replace(".xml", ".xsl"))
+				transformer.transform(new StreamSource(f), new StreamResult(output));
+				// Ugly hack to work around Java XSLT bug
+				output.setText(output.text.replaceFirst("xsl:stylesheet", "xsl:stylesheet xmlns:exsl=\"http://exslt.org/common\" "));
+		})
 
-        return workDir;
-    }
+		return workDir;
+	}
 
-    private void unpack() {
-        def resourcesZipPath = 'META-INF/docbook-resources.zip'
-        def resourcesZip = this.class.classLoader.getResource(resourcesZipPath)
-        if (resourcesZip == null) {
-            throw new GradleException("could not find ${resourcesZipPath} on the classpath");
-        }
-        // the file is a jar:file - write it to disk first
-        def zipInputStream = resourcesZip.getContent()
-        def zipFile = new File("${project.buildDir}/docbook-resources.zip")
-        copyFile(zipInputStream, zipFile)
-        project.copy {
-            from project.zipTree(zipFile)
-            into "${project.buildDir}/docbook-resources"
-        }
-    }
+	private void unpack() {
+		def resourcesZipPath = 'META-INF/docbook-resources.zip'
+		def resourcesZip = this.class.classLoader.getResource(resourcesZipPath)
+		if (resourcesZip == null) {
+			throw new GradleException("could not find ${resourcesZipPath} on the classpath");
+		}
+		// the file is a jar:file - write it to disk first
+		def zipInputStream = resourcesZip.getContent()
+		def zipFile = new File("${project.buildDir}/docbook-resources.zip")
+		copyFile(zipInputStream, zipFile)
+		project.copy {
+			from project.zipTree(zipFile)
+			into "${project.buildDir}/docbook-resources"
+		}
+	}
 
-    private void copyFile(InputStream source, File destFile) {
-        destFile.createNewFile();
-        FileOutputStream to = null;
-        try {
-            to = new FileOutputStream(destFile);
-            byte[] buffer = new byte[4096];
-            int bytesRead;
+	private void copyFile(InputStream source, File destFile) {
+		destFile.createNewFile();
+		FileOutputStream to = null;
+		try {
+			to = new FileOutputStream(destFile);
+			byte[] buffer = new byte[4096];
+			int bytesRead;
 
-            while ((bytesRead = source.read(buffer)) > 0) {
-                to.write(buffer, 0, bytesRead);
-            }
-        } finally {
-            if (source != null) {
-                source.close();
-            }
-            if (to != null) {
-                to.close();
-            }
-        }
-    }
+			while ((bytesRead = source.read(buffer)) > 0) {
+				to.write(buffer, 0, bytesRead);
+			}
+		} finally {
+			if (source != null) {
+				source.close();
+			}
+			if (to != null) {
+				to.close();
+			}
+		}
+	}
 
-    // for some reason, statically typing the return value leads to the following
-    // error when Gradle tries to subclass the task class at runtime:
-    // java.lang.NoClassDefFoundError: org/apache/xml/resolver/CatalogManager
-    private Object createCatalogManager() {
-        CatalogManager manager = new CatalogManager();
-        manager.setIgnoreMissingProperties(true);
-        ClassLoader classLoader = this.getClass().getClassLoader();
-        StringBuilder builder = new StringBuilder();
-        String docbookCatalogName = "docbook/catalog.xml";
-        URL docbookCatalog = classLoader.getResource(docbookCatalogName);
+	// for some reason, statically typing the return value leads to the following
+	// error when Gradle tries to subclass the task class at runtime:
+	// java.lang.NoClassDefFoundError: org/apache/xml/resolver/CatalogManager
+	private Object createCatalogManager() {
+		CatalogManager manager = new CatalogManager();
+		manager.setIgnoreMissingProperties(true);
+		ClassLoader classLoader = this.getClass().getClassLoader();
+		StringBuilder builder = new StringBuilder();
+		String docbookCatalogName = "docbook/catalog.xml";
+		URL docbookCatalog = classLoader.getResource(docbookCatalogName);
 
-        if (docbookCatalog == null) {
-            throw new IllegalStateException("Docbook catalog " + docbookCatalogName + " could not be found in " + classLoader);
-        }
+		if (docbookCatalog == null) {
+			throw new IllegalStateException("Docbook catalog " + docbookCatalogName + " could not be found in " + classLoader);
+		}
 
-        builder.append(docbookCatalog.toExternalForm());
+		builder.append(docbookCatalog.toExternalForm());
 
-        Enumeration enumeration = classLoader.getResources("/catalog.xml");
-        while (enumeration.hasMoreElements()) {
-            builder.append(';');
-            URL resource = (URL) enumeration.nextElement();
-            builder.append(resource.toExternalForm());
-        }
-        String catalogFiles = builder.toString();
-        manager.setCatalogFiles(catalogFiles);
-        return manager;
-    }
+		Enumeration enumeration = classLoader.getResources("/catalog.xml");
+		while (enumeration.hasMoreElements()) {
+			builder.append(';');
+			URL resource = (URL) enumeration.nextElement();
+			builder.append(resource.toExternalForm());
+		}
+		String catalogFiles = builder.toString();
+		manager.setCatalogFiles(catalogFiles);
+		return manager;
+	}
 
-    private void copyImagesAndCss(def project, def dir) {
-        project.copy {
-            into "${project.buildDir}/reference/${dir}/images"
-            from "${sourceDir}/images" // SI specific
-        }
-        project.copy {
-            into "${project.buildDir}/reference/${dir}/images"
-            from "${project.buildDir}/docbook-resources/images" // Common
-        }
-        project.copy {
-            into "${project.buildDir}/reference/${dir}/css"
-            from "${project.buildDir}/docbook-resources/css" // Common
-        }
-    }
+	private void copyImagesAndCss(def project, def dir) {
+		project.copy {
+			into "${project.buildDir}/reference/${dir}/images"
+			from "${sourceDir}/images" // SI specific
+		}
+		project.copy {
+			into "${project.buildDir}/reference/${dir}/images"
+			from "${project.buildDir}/docbook-resources/images" // Common
+		}
+		project.copy {
+			into "${project.buildDir}/reference/${dir}/css"
+			from "${project.buildDir}/docbook-resources/css" // Common
+		}
+	}
 }
 
 class HtmlSingleDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
-    public HtmlSingleDocbookReferenceTask() {
-        setDescription('Generates single-page HTML reference documentation.')
-        stylesheet =  "html-single-custom.xsl";
-        xdir = 'htmlsingle'
-    }
+		public HtmlSingleDocbookReferenceTask() {
+			setDescription('Generates single-page HTML reference documentation.')
+			stylesheet =  "html-single-custom.xsl";
+			xdir = 'htmlsingle'
+		}
 
-    @Override
-    protected String getExtension() {
-        return 'html'
-    }
+		@Override
+		protected String getExtension() {
+			return 'html'
+		}
 }
 
 
 class HtmlMultiDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
-    public HtmlMultiDocbookReferenceTask() {
-        setDescription('Generates multi-page HTML reference documentation.')
-        stylesheet = "html-custom.xsl";
-        xdir = 'html'
-    }
+		public HtmlMultiDocbookReferenceTask() {
+			setDescription('Generates multi-page HTML reference documentation.')
+			stylesheet = "html-custom.xsl";
+			xdir = 'html'
+		}
 
-    @Override
-    protected String getExtension() {
-        return 'html'
-    }
+		@Override
+		protected String getExtension() {
+			return 'html'
+		}
 
-    @Override
-    protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
-        String rootFilename = outputFile.getName();
-        rootFilename = rootFilename.substring(0, rootFilename.lastIndexOf('.'));
-        transformer.setParameter("root.filename", rootFilename);
-        transformer.setParameter("base.dir", outputFile.getParent() + File.separator);
-    }
+		@Override
+		protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
+			String rootFilename = outputFile.getName();
+			rootFilename = rootFilename.substring(0, rootFilename.lastIndexOf('.'));
+			transformer.setParameter("root.filename", rootFilename);
+			transformer.setParameter("base.dir", outputFile.getParent() + File.separator);
+		}
 }
 
 
 class PdfDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
-    String admonGraphicsPath
+	String admonGraphicsPath
 
-    public PdfDocbookReferenceTask() {
-        setDescription('Generates PDF reference documentation.')
-        stylesheet = "pdf-custom.xsl"
-        xdir = 'pdf'
-        admonGraphicsPath = "${project.buildDir}/docbook-resources/images/admon/"
-    }
+	public PdfDocbookReferenceTask() {
+		setDescription('Generates PDF reference documentation.')
+		stylesheet = "pdf-custom.xsl"
+		xdir = 'pdf'
+		admonGraphicsPath = "${project.buildDir}/docbook-resources/images/admon/"
+	}
 
-    @Override
-    protected String getExtension() {
-        return 'fo'
-    }
+	@Override
+	protected String getExtension() {
+		return 'fo'
+	}
 
-    @Override
-    protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
-        transformer.setParameter("admon.graphics", "1");
-        transformer.setParameter("admon.graphics.path", admonGraphicsPath);
-    }
+	@Override
+	protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
+		transformer.setParameter("admon.graphics", "1");
+		transformer.setParameter("admon.graphics.path", admonGraphicsPath);
+	}
 
-    /**
-     * <a href="http://xmlgraphics.apache.org/fop/0.95/embedding.html#render">From the FOP usage guide</a>
-     */
-    @Override
-    protected void postTransform(File foFile) {
-        FopFactory fopFactory = FopFactory.newInstance();
+	/**
+	 * <a href="http://xmlgraphics.apache.org/fop/0.95/embedding.html#render">From the FOP usage guide</a>
+	 */
+	@Override
+	protected void postTransform(File foFile) {
+		FopFactory fopFactory = FopFactory.newInstance();
 
-        OutputStream out = null;
-        final File pdfFile = getPdfOutputFile(foFile);
-        logger.debug("Transforming 'fo' file " + foFile + " to PDF: " + pdfFile);
+		OutputStream out = null;
+		final File pdfFile = getPdfOutputFile(foFile);
+		logger.debug("Transforming 'fo' file " + foFile + " to PDF: " + pdfFile);
 
-        try {
-            out = new BufferedOutputStream(new FileOutputStream(pdfFile));
+		try {
+			out = new BufferedOutputStream(new FileOutputStream(pdfFile));
 
-            Fop fop = fopFactory.newFop(MimeConstants.MIME_PDF, out);
+			Fop fop = fopFactory.newFop(MimeConstants.MIME_PDF, out);
 
-            TransformerFactory factory = TransformerFactory.newInstance();
-            Transformer transformer = factory.newTransformer();
+			TransformerFactory factory = TransformerFactory.newInstance();
+			Transformer transformer = factory.newTransformer();
 
-            Source src = new StreamSource(foFile);
+			Source src = new StreamSource(foFile);
 
-            Result res = new SAXResult(fop.getDefaultHandler());
+			Result res = new SAXResult(fop.getDefaultHandler());
 
-            switch (project.gradle.startParameter.logLevel) {
-                case LogLevel.DEBUG:
-                case LogLevel.INFO:
-                    break;
-                default:
-                    // only show verbose fop output if the user has specified 'gradle -d' or 'gradle -i'
-                    LoggerFactory.getILoggerFactory().getLogger('org.apache.fop').level =
-                        LoggerFactory.getILoggerFactory().getLogger('ROOT').level.class.ERROR
-            }
+			switch (project.gradle.startParameter.logLevel) {
+				case LogLevel.DEBUG:
+				case LogLevel.INFO:
+					break;
+				default:
+					// only show verbose fop output if the user has specified 'gradle -d' or 'gradle -i'
+					LoggerFactory.getILoggerFactory().getLogger('org.apache.fop').level =
+					LoggerFactory.getILoggerFactory().getLogger('ROOT').level.class.ERROR
+			}
 
-            transformer.transform(src, res);
+			transformer.transform(src, res);
+		} finally {
+			if (out != null) {
+				out.close();
+			}
+		}
 
-        } finally {
-            if (out != null) {
-                out.close();
-            }
-        }
+		if (!foFile.delete()) {
+			logger.warn("Failed to delete 'fo' file " + foFile);
+		}
+	}
 
-        if (!foFile.delete()) {
-            logger.warn("Failed to delete 'fo' file " + foFile);
-        }
-    }
-
-    private File getPdfOutputFile(File foFile) {
-        return new File(foFile.parent, project.reference.pdfFilename)
-    }
-
+	private File getPdfOutputFile(File foFile) {
+		return new File(foFile.parent, project.reference.pdfFilename)
+	}
 }
 
