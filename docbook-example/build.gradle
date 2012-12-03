@@ -5,7 +5,7 @@ buildscript {
 	}
 
 	dependencies {
-		classpath "org.springframework.build.gradle:docbook-plugin:0.0.1-SNAPSHOT"
+		classpath "org.springframework.build.gradle:docbook-reference-plugin:0.3.0-SNAPSHOT"
 	}
 }
 
@@ -13,7 +13,7 @@ repositories {
 	maven { url "https://repo.springsource.org/libs-release" }
 }
 
-apply plugin: "docbook"
+apply plugin: "docbook-reference"
 
 task docbook(type: DocbookTask) {
 }

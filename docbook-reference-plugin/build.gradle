@@ -1,0 +1,12 @@
+dependencies {
+	compile project(":docbook-plugin") //FIXME needs to have same version
+}
+
+task docbookResources(type: Zip) {
+	classifier = "docbook"
+	from "src/main/docbook"
+}
+
+artifacts {
+	archives docbookResources
+}

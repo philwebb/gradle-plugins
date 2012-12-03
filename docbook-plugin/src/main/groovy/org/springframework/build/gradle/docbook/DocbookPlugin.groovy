@@ -41,7 +41,6 @@ class DocbookPlugin implements Plugin<Project> {
 	public void apply(Project project) {
 		println project
 		project.extensions.create("docbook", DocbookPluginExtension)
-		project.configurations.add("docbook")
 		project.setProperty("DocbookTask", DocbookTask.class)
 	}
 }
@@ -78,33 +77,21 @@ class DocbookTask extends ConventionTask {
 
 	@TaskAction
 	void docbook() {
-		unpackDocbookConfiguration()
-		unpackEmbeddedDocbook()
+		unpackDocbook()
 		logConsoleOutput()
-	}
-
-	/**
-	 * Unpack an user defined docbook dependencies.
-	 */
-	private void unpackDocbookConfiguration() {
-		Configuration configuration = project.configurations.docbook
-		if(configuration.getState() == State.UNRESOLVED) {
-			ResolvedConfiguration resolved = configuration.resolvedConfiguration
-			resolved.rethrowFailure()
-			resolved.resolvedArtifacts.each {
-				unpack(it.file)
-			}
-		}
 	}
 
 	/**
 	 * Unpack the embedded docbook xsl (only no other docbook dependency has created
 	 * the docbook folder).
 	 */
-	private void unpackEmbeddedDocbook() {
+	private void unpackDocbook() {
 		if(!new File(outputDir, "docbook").exists()) {
 			Configuration classpathConfiguration = project.buildscript.configurations.classpath
 			def classpathArtifacts = classpathConfiguration.resolvedConfiguration.resolvedArtifacts
+			classpathArtifacts.find{ it.classifier == "docbook" }.each {
+				unpack(it.file)
+			}
 			unpack(classpathArtifacts.find{ it.name == "docbook-xsl" }.file)
 		}
 	}
