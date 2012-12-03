@@ -1,0 +1,3 @@
+dependencies {
+	compile 'net.sf.docbook:docbook-xsl:1.75.2:resources@zip'
+}

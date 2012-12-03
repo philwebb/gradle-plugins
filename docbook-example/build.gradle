@@ -1,0 +1,20 @@
+buildscript {
+	repositories {
+		maven { url 'http://repo.springsource.org/plugins-release' }
+		mavenLocal()
+	}
+
+	dependencies {
+		classpath "org.springframework.build.gradle:docbook-plugin:0.0.1-SNAPSHOT"
+	}
+}
+
+repositories {
+	maven { url "https://repo.springsource.org/libs-release" }
+}
+
+apply plugin: "docbook"
+
+task docbook(type: DocbookTask) {
+}
+

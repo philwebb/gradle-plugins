@@ -1,0 +1,42 @@
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.internal.ConventionTask;
+import org.gradle.api.tasks.TaskAction;
+
+buildscript {
+	repositories {
+		maven { url "https://repo.springsource.org/plugins-release" }
+	}
+}
+
+apply plugin: DocbookPlugin
+
+repositories {
+	maven { url "https://repo.springsource.org/libs-release" }
+}
+
+dependencies {
+	docbook "org.springframework.docbook:0.0.1:resources@zip"
+}
+
+task referenceHtmlMulti(type: DocbookTask) {
+	stylesheet = "spring-html-muli.xsl"
+	outputDir = "${project.docbook.outputDir}/html"
+}
+
+task referenceHtmlSingle(type: DocbookTask) {
+	stylesheet = "spring-html-single.xsl"
+	outputDir = "${project.docbook.outputDir}/htmlsingle"
+}
+
+task referencePdf(type: DocbookTask) {
+	stylesheet = "spring-pdf.xsl"
+	outputDir = "${project.docbook.outputDir}/pdf"
+	outputName = "${project.rootProject.name}-reference.pdf"
+	mimeType = "application/pdf"
+}
+
+task reference(dependsOn: referenceHtmlMulti, referenceHtmlSingle, referencePdf) {
+}

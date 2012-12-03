@@ -35,55 +35,79 @@ import org.xml.sax.XMLReader
 import com.icl.saxon.TransformerFactoryImpl
 
 
+/**
+ * Gradle plugin that can be used to generate docbook reference guides.
+ *
+ * @author Chris Beams
+ * @author Phillip Webb
+ */
 class DocbookReferencePlugin implements Plugin<Project> {
 
 	def void apply(Project project) {
 
-		project.plugins.apply('base') // for `clean` task
+		// Apply base for the 'clean' task
+		project.plugins.apply('base')
 
-		def tasks = project.tasks
+		def docbookTasks = [
+			project.tasks.add("referenceHtmlMulti", HtmlMultiDocbookReferenceTask),
+			project.tasks.add("referenceHtmlSingle", HtmlSingleDocbookReferenceTask),
+			project.tasks.add("referencePdf", PdfDocbookReferenceTask)
+		]
 
-		def multi = tasks.add("referenceHtmlMulti", HtmlMultiDocbookReferenceTask)
-		def single = tasks.add("referenceHtmlSingle", HtmlSingleDocbookReferenceTask)
-		def pdf = tasks.add("referencePdf", PdfDocbookReferenceTask)
-
-		def reference = tasks.add("reference") {
+		def reference = project.tasks.add("reference") {
 			group = 'Documentation'
 			description = "Generates HTML and PDF reference documentation."
-			dependsOn([multi, single, pdf])
+			dependsOn(docbookTasks)
 
-			ext.sourceDir = null // e.g. new File('src/reference')
-			ext.outputDir = new File(project.buildDir, "reference")
-			ext.pdfFilename = "${project.rootProject.name}-reference.pdf"
+			ext {
+				sourceDir = null // e.g. new File('src/reference')
+				outputDir = new File(project.buildDir, "reference")
+				pdfFilename = "${project.rootProject.name}-reference.pdf"
+			}
 
-			outputs.dir outputDir
+			outputs.dir(outputDir)
 		}
 
 		project.gradle.taskGraph.whenReady {
-			if (multi.sourceDir == null) multi.sourceDir = reference.sourceDir
-			if (single.sourceDir == null) single.sourceDir = reference.sourceDir
-			if (pdf.sourceDir == null) pdf.sourceDir = reference.sourceDir
-
-			if (multi.outputDir == null) multi.outputDir = reference.outputDir
-			if (single.outputDir == null) single.outputDir = reference.outputDir
-			if (pdf.outputDir == null) pdf.outputDir = reference.outputDir
+			docbookTasks.each() { docbookTask ->
+				if(docbookTask.sourceDir == null) {
+					docbookTask.sourceDir = reference.sourceDir
+				}
+				if(docbookTask.outputDir == null) {
+					docbookTask.outputDir = reference.outputDir
+				}
+			}
 		}
 	}
 }
 
+/**
+ * Base class of all dobook tasks.
+ */
 abstract class AbstractDocbookReferenceTask extends DefaultTask {
-	@InputDirectory
-	File sourceDir // e.g. 'src/reference'
 
+	/**
+	 * The source directory, if not explicitly set will default to the value set
+	 * in the reference task.
+	 */
+	@InputDirectory
+	File sourceDir
+
+	/**
+	 * The source docbook XML
+	 */
 	@Input
 	String sourceFileName = 'index.xml';
 
+	@OutputDirectory
+	File outputDir = new File(project.getBuildDir(), "reference");
+
+	/**
+	 * The name of the XSLT that should be applied.
+	 */
 	String stylesheet;
 
 	String xdir;
-
-	@OutputDirectory
-	File outputDir = new File(project.getBuildDir(), "reference");
 
 	@TaskAction
 	public final void transform() {

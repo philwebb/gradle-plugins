@@ -1,0 +1,4 @@
+rootProject.name = 'gradle-plugins'
+
+include 'bundlor-plugin'
+include 'docbook-reference-plugin'

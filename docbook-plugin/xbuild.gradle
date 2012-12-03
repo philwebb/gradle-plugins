@@ -1,0 +1,61 @@
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.internal.ConventionTask;
+import org.gradle.api.tasks.TaskAction;
+
+buildscript {
+	repositories {
+		maven { url "https://repo.springsource.org/plugins-release" }
+	}
+}
+
+apply plugin: "eclipse"
+apply plugin: "groovy"
+apply plugin: DocbookPlugin
+
+repositories {
+	maven { url "https://repo.springsource.org/libs-release" }
+}
+
+dependencies {
+	compile gradleApi()
+	groovy localGroovy()
+	docbook "net.sf.docbook:docbook-xsl:1.75.1:resources@zip"
+	docbook "net.sf.docbook:docbook-xsl:1.75.2:resources@zip"
+}
+
+docbook {
+	//message "Welcome"
+}
+
+task example(type: DocbookTask) {
+	// bookname = "phil"
+}
+
+class DocbookPlugin implements Plugin<Project> {
+	void apply(Project project) {
+		project.extensions.create("docbook", DocbookPluginExtension)
+		project.configurations.add("docbook")
+		project.task('hello') << {
+			ResolvedConfiguration resolved = project.configurations.docbook.resolvedConfiguration
+			resolved.rethrowFailure();
+			print resolved.resolvedArtifacts;
+		}
+	}
+}
+
+class DocbookTask extends ConventionTask {
+
+	def String bookname = project.docbook.message;
+
+	@TaskAction
+	void docbook() {
+		println "Making da book ${bookname}"
+	}
+}
+
+class DocbookPluginExtension {
+	def String message = "Hello";
+}
