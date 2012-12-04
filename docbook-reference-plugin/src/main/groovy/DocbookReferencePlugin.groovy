@@ -273,7 +273,7 @@ class HtmlSingleDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
     public HtmlSingleDocbookReferenceTask() {
         setDescription('Generates single-page HTML reference documentation.')
-        stylesheet =  "html-single-custom.xsl";
+        stylesheet =  "html-singlepage.xsl";
         xdir = 'htmlsingle'
     }
 
@@ -288,7 +288,7 @@ class HtmlMultiDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
     public HtmlMultiDocbookReferenceTask() {
         setDescription('Generates multi-page HTML reference documentation.')
-        stylesheet = "html-custom.xsl";
+        stylesheet = "html-multipage.xsl";
         xdir = 'html'
     }
 
@@ -309,24 +309,15 @@ class HtmlMultiDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
 class PdfDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
-    String admonGraphicsPath
-
     public PdfDocbookReferenceTask() {
         setDescription('Generates PDF reference documentation.')
-        stylesheet = "pdf-custom.xsl"
+        stylesheet = "pdf.xsl"
         xdir = 'pdf'
-        admonGraphicsPath = "${project.buildDir}/docbook-resources/images/admon/"
     }
 
     @Override
     protected String getExtension() {
         return 'fo'
-    }
-
-    @Override
-    protected void preTransform(Transformer transformer, File sourceFile, File outputFile) {
-        transformer.setParameter("admon.graphics", "1");
-        transformer.setParameter("admon.graphics.path", admonGraphicsPath);
     }
 
     /**
