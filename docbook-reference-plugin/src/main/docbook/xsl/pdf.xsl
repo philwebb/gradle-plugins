@@ -33,10 +33,10 @@ under the License.
 	<xsl:param name="fop1.extensions" select="1"/>
 
 	<!-- resize the admon graphics. they're width 36pt by default
-	 even though the graphics that ship with docbook are 24x24 -->
+	even though the graphics that ship with docbook are 24x24 -->
 	<xsl:template match="*" mode="admon.graphic.width">
-	  <xsl:param name="node" select="."/>
-	  <xsl:text>24pt</xsl:text>
+		<xsl:param name="node" select="."/>
+		<xsl:text>14pt</xsl:text>
 	</xsl:template>
 
 
@@ -49,6 +49,77 @@ under the License.
 	<xsl:param name="region.after.extent" select="'1cm'"/>
 	<xsl:param name="page.margin.bottom" select="'1cm'"/>
 	<xsl:param name="title.margin.left" select="'0cm'"/>
+
+	<!-- TITLE PAGE -->
+
+	<xsl:template name="book.titlepage.recto">
+		<fo:block>
+			<fo:table table-layout="fixed" width="175mm">
+				<fo:table-column column-width="175mm"/>
+				<fo:table-body>
+					<fo:table-row>
+						<fo:table-cell text-align="center">
+							<fo:block>
+								<fo:external-graphic src="images/logo.png" width="240px"
+									height="auto" content-width="scale-to-fit"
+									content-height="scale-to-fit"
+									content-type="content-type:image/png" text-align="center"
+								/>
+							</fo:block>
+							<fo:block font-family="Helvetica" font-size="20pt" font-weight="bold" padding="10mm">
+								<xsl:value-of select="bookinfo/title"/>
+							</fo:block>
+							<fo:block font-family="Helvetica" font-size="14pt" padding-before="2mm">
+								<xsl:value-of select="bookinfo/subtitle"/>
+							</fo:block>
+							<fo:block font-family="Helvetica" font-size="14pt" padding="2mm">
+								<xsl:value-of select="bookinfo/releaseinfo"/>
+							</fo:block>
+						</fo:table-cell>
+					</fo:table-row>
+					<fo:table-row>
+						<fo:table-cell text-align="center">
+							<fo:block font-family="Helvetica" font-size="14pt" padding="5mm">
+								<xsl:value-of select="bookinfo/pubdate"/>
+							</fo:block>
+						</fo:table-cell>
+					</fo:table-row>
+					<fo:table-row>
+						<fo:table-cell text-align="center">
+							<fo:block font-family="Helvetica" font-size="10pt" padding="10mm">
+								<xsl:for-each select="bookinfo/authorgroup/author">
+									<xsl:if test="position() > 1">
+										<xsl:text>, </xsl:text>
+									</xsl:if>
+									<xsl:value-of select="."/>
+								</xsl:for-each>
+							</fo:block>
+
+							<fo:block font-family="Helvetica" font-size="10pt" padding="5mm">
+								<xsl:value-of select="bookinfo/pubdate"/>
+							</fo:block>
+
+							<fo:block font-family="Helvetica" font-size="10pt" padding="5mm">
+								<xsl:text>Copyright &#xA9; </xsl:text><xsl:value-of select="bookinfo/copyright"/>
+							</fo:block>
+
+							<fo:block font-family="Helvetica" font-size="8pt" padding="1mm">
+								<xsl:value-of select="bookinfo/legalnotice"/>
+							</fo:block>
+						</fo:table-cell>
+					</fo:table-row>
+				</fo:table-body>
+			</fo:table>
+		</fo:block>
+	</xsl:template>
+
+	<!-- Prevent blank pages in output -->
+	<xsl:template name="book.titlepage.before.verso">
+	</xsl:template>
+	<xsl:template name="book.titlepage.verso">
+	</xsl:template>
+	<xsl:template name="book.titlepage.separator">
+	</xsl:template>
 
 	<!--  HEADER -->
 
