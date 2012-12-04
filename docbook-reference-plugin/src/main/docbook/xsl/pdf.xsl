@@ -264,8 +264,10 @@ under the License.
 	<xsl:param name="hyphenate">false</xsl:param>
 
 	<!-- Default Font size -->
+	<xsl:param name="body.font.family">Helvetica</xsl:param>
 	<xsl:param name="body.font.master">11</xsl:param>
 	<xsl:param name="body.font.small">8</xsl:param>
+	<xsl:param name="title.font.family">Helvetica</xsl:param>
 
 	<!-- Line height in body text -->
 	<xsl:param name="line-height">1.4</xsl:param>
@@ -508,4 +510,31 @@ under the License.
 			</xsl:choose>
 		</fo:basic-link>
 	</xsl:template>
+
+	<!-- SYNTAX HIGHLIGHT -->
+
+	<xsl:template match='xslthl:keyword' mode="xslthl">
+	  <fo:inline font-weight="bold" color="#7F0055"><xsl:apply-templates mode="xslthl"/></fo:inline>
+	</xsl:template>
+
+	<xsl:template match='xslthl:string' mode="xslthl">
+	  <fo:inline font-weight="bold" font-style="italic" color="#2A00FF"><xsl:apply-templates mode="xslthl"/></fo:inline>
+	</xsl:template>
+
+	<xsl:template match='xslthl:comment' mode="xslthl">
+	  <fo:inline font-style="italic" color="#3F5FBF"><xsl:apply-templates mode="xslthl"/></fo:inline>
+	</xsl:template>
+
+	<xsl:template match='xslthl:tag' mode="xslthl">
+	  <fo:inline font-weight="bold" color="#3F7F7F"><xsl:apply-templates mode="xslthl"/></fo:inline>
+	</xsl:template>
+
+	<xsl:template match='xslthl:attribute' mode="xslthl">
+	  <fo:inline font-weight="bold" color="#7F007F"><xsl:apply-templates mode="xslthl"/></fo:inline>
+	</xsl:template>
+
+	<xsl:template match='xslthl:value' mode="xslthl">
+	  <fo:inline font-weight="bold" color="#2A00FF"><xsl:apply-templates mode="xslthl"/></fo:inline>
+	</xsl:template>
+
 </xsl:stylesheet>

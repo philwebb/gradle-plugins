@@ -174,18 +174,20 @@ abstract class AbstractDocbookReferenceTask extends DefaultTask {
         }
 
         // Copy and process any custom titlepages
-        def titlePageWorkDir = new File(new File(workDir, "xsl"), "titlepage");
-        titlePageWorkDir.mkdirs();
-        Transformer transformer = new TransformerFactoryImpl().newTransformer(
-            new StreamSource(this.class.classLoader.getResourceAsStream("docbook/template/titlepage.xsl")));
-        transformer.setParameter("ns", "http://www.w3.org/1999/xhtml");
-        new File(sourceDir, "titlepage").eachFileMatch( ~/.*\.xml/, { f ->
-            File output = new File(titlePageWorkDir, f.name.replace(".xml", ".xsl"))
-            transformer.transform(new StreamSource(f), new StreamResult(output));
-            // Ugly hack to work around Java XSLT bug
-            output.setText(output.text.replaceFirst("xsl:stylesheet", "xsl:stylesheet xmlns:exsl=\"http://exslt.org/common\" "));
-        })
-
+        File titlePageSource = new File(sourceDir, "titlepage")
+		if(titlePageSource.exists()) {
+	        def titlePageWorkDir = new File(new File(workDir, "xsl"), "titlepage");
+	        titlePageWorkDir.mkdirs();
+	        Transformer transformer = new TransformerFactoryImpl().newTransformer(
+	            new StreamSource(this.class.classLoader.getResourceAsStream("docbook/template/titlepage.xsl")));
+	        transformer.setParameter("ns", "http://www.w3.org/1999/xhtml");
+			titlePageSource.eachFileMatch( ~/.*\.xml/, { f ->
+	            File output = new File(titlePageWorkDir, f.name.replace(".xml", ".xsl"))
+	            transformer.transform(new StreamSource(f), new StreamResult(output));
+	            // Ugly hack to work around Java XSLT bug
+	            output.setText(output.text.replaceFirst("xsl:stylesheet", "xsl:stylesheet xmlns:exsl=\"http://exslt.org/common\" "));
+	        })
+    	}
         return workDir;
     }
 
