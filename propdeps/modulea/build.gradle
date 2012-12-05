@@ -1,0 +1,5 @@
+dependencies {
+	compile 'commons-collections:commons-collections:3.2.1'
+	provided 'commons-logging:commons-logging:1.1.1'
+	optional 'commons-lang:commons-lang:2.6'
+}

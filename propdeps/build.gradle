@@ -1,0 +1,14 @@
+apply plugin: 'groovy'
+
+dependencies {
+	compile gradleApi()
+	groovy localGroovy()
+}
+
+allprojects {
+	repositories {
+		mavenCentral()
+	}
+	apply plugin: 'propdeps-eclipse'
+	apply plugin: 'propdeps'
+}
