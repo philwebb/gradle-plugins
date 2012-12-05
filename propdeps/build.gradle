@@ -9,6 +9,11 @@ allprojects {
 	repositories {
 		mavenCentral()
 	}
-	apply plugin: 'propdeps-eclipse'
 	apply plugin: 'propdeps'
+	apply plugin: 'propdeps-eclipse'
+	apply plugin: 'propdeps-idea'
+	apply plugin: 'propdeps-maven'
+
+	group="org.springframework.build.gradle.propdeps"
+	version="0.0.1-SNAPSHOT"
 }
