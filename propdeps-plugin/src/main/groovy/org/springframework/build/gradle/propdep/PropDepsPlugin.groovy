@@ -42,13 +42,12 @@ class PropDepsPlugin implements Plugin<Project> {
 
 		JavaPluginConvention javaConvention = project.convention.plugins["java"]
 		SourceSetContainer sourceSets = javaConvention.sourceSets
-		addToSourceSet(sourceSets.getByName("main"), provided, optional)
-		addToSourceSet(sourceSets.getByName("test"), provided, optional)
+		addToSourceSet(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME), provided, optional)
+		addToSourceSet(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME), provided, optional)
 	}
 
 	private Configuration addConfiguration(Project project, String name) {
 		Configuration configuration = project.configurations.add(name)
-		configuration.transitive = false
 		configuration.visible = false
 		return configuration
 	}
@@ -56,6 +55,7 @@ class PropDepsPlugin implements Plugin<Project> {
 	private addToSourceSet(SourceSet sourceSet, FileCollection... configurations) {
 		sourceSet.compileClasspath = new UnionFileCollection(
 			[sourceSet.compileClasspath] + configurations)
-
+		sourceSet.runtimeClasspath = new UnionFileCollection(
+			[sourceSet.runtimeClasspath] + configurations)
 	}
 }
