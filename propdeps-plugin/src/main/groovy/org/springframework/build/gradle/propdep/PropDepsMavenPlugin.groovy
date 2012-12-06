@@ -36,11 +36,11 @@ class PropDepsMavenPlugin implements Plugin<Project> {
 		project.plugins.apply(MavenPlugin)
 
 		Conf2ScopeMappingContainer scopeMappings = project.conf2ScopeMappings
-		scopeMappings.addMapping(MavenPlugin.COMPILE_PRIORITY,
+		scopeMappings.addMapping(MavenPlugin.COMPILE_PRIORITY + 1,
 			project.configurations.getByName("provided"), Conf2ScopeMappingContainer.PROVIDED)
 
 		// Add a temporary new optional scope
-		scopeMappings.addMapping(MavenPlugin.COMPILE_PRIORITY,
+		scopeMappings.addMapping(MavenPlugin.COMPILE_PRIORITY + 2,
 			project.configurations.getByName("optional"), "optional")
 
 		// Add a hook to replace the optional scope
