@@ -44,11 +44,11 @@ class PropDepsMavenPlugin implements Plugin<Project> {
 			project.configurations.getByName("optional"), "optional")
 
 		// Add a hook to replace the optional scope
-		project.tasks.findAll{ it instanceof Upload }.each{ applyToUploadTask(project, it) }
+		project.tasks.withType(Upload).each{ applyToUploadTask(project, it) }
 	}
 
 	private void applyToUploadTask(Project project, Upload upload) {
-		upload.repositories.findAll{ it instanceof PomFilterContainer }.each{ applyToPom(project, it) }
+		upload.repositories.withType(PomFilterContainer).each{ applyToPom(project, it) }
 	}
 
 	private void applyToPom(Project project, PomFilterContainer pomContainer) {
