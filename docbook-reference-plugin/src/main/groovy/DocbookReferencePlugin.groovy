@@ -45,11 +45,12 @@ class DocbookReferencePlugin implements Plugin<Project> {
 		def multi = tasks.create("referenceHtmlMulti", HtmlMultiDocbookReferenceTask)
 		def single = tasks.create("referenceHtmlSingle", HtmlSingleDocbookReferenceTask)
 		def pdf = tasks.create("referencePdf", PdfDocbookReferenceTask)
+		def epub = tasks.create("referenceEPub", EPubDocbookReferenceTask)
 
 		def reference = tasks.create("reference") {
 			group = 'Documentation'
 			description = "Generates HTML and PDF reference documentation."
-			dependsOn([multi, single, pdf])
+			dependsOn([multi, single, pdf, epub])
 
 			ext.sourceDir = null // e.g. new File('src/reference')
 			ext.outputDir = new File(project.buildDir, "reference")
@@ -64,14 +65,17 @@ class DocbookReferencePlugin implements Plugin<Project> {
 			if (multi.sourceDir == null) multi.sourceDir = reference.sourceDir
 			if (single.sourceDir == null) single.sourceDir = reference.sourceDir
 			if (pdf.sourceDir == null) pdf.sourceDir = reference.sourceDir
+			if (epub.sourceDir == null) epub.sourceDir = reference.sourceDir
 
 			if (multi.outputDir == null) multi.outputDir = reference.outputDir
 			if (single.outputDir == null) single.outputDir = reference.outputDir
 			if (pdf.outputDir == null) pdf.outputDir = reference.outputDir
+			if (epub.outputDir == null) epub.outputDir = reference.outputDir
 
 			if (multi.sourceFileName == null) multi.sourceFileName = reference.sourceFileName
 			if (single.sourceFileName == null) single.sourceFileName = reference.sourceFileName
 			if (pdf.sourceFileName == null) pdf.sourceFileName = reference.sourceFileName
+			if (epub.sourceFileName == null) epub.sourceFileName = reference.sourceFileName
 		}
 
 	}
@@ -417,3 +421,16 @@ class PdfDocbookReferenceTask extends AbstractDocbookReferenceTask {
 
 }
 
+class EPubDocbookReferenceTask extends AbstractDocbookReferenceTask {
+
+	public EPubDocbookReferenceTask() {
+		setDescription('Generates EPub reference documentation.')
+		stylesheet =  "epub.xsl";
+		xdir = 'epub'
+	}
+
+	@Override
+	protected String getExtension() {
+		return 'html'
+	}
+}
